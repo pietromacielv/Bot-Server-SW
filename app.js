@@ -7,7 +7,7 @@ require("dotenv").config();
 const Constants = Eris.Constants;
 
 const bot = new Eris(process.env.BOT_TOKEN, {
-  intents: ["all"],
+  intents: ["ALL"],
 });
 
 app.use(express.json());
@@ -70,7 +70,7 @@ bot.on("ready", async () => {
   });
 });
 
-bot.on("guildMemberAdd", (guild, member) => {
+bot.on("guildMemberAdd", async (guild, member) => {
   const embed = {
     title: `Bem-vindo(a) ao nosso servidor, viajante!`,
     description: `${member.mention}, sinta-se à vontade para interagir conosco em nossa comunidade.`,
@@ -96,34 +96,77 @@ bot.on("guildMemberAdd", (guild, member) => {
   };
   bot.createMessage("1257724564407062531", {
     embed,
-    components: [
+  });
+
+  try {
+    const privateChannel = await guild.createChannel(
+      `bem-vindo-${member.username}`,
+      0,
       {
-        type: Constants.ComponentTypes.ACTION_ROW,
-        components: [
+        permissionOverwrites: [
           {
-            type: Constants.ComponentTypes.BUTTON,
-            style: Constants.ButtonStyles.PRIMARY,
-            custom_id: "verify",
-            label: "Verificar",
-            disabled: false,
+            id: member.id,
+            type: 1,
+            allow: 1024,
+          },
+          {
+            id: bot.user.id,
+            type: 1,
+            allow: 1024,
+          },
+          {
+            id: guild.id,
+            type: 0,
+            deny: 1024,
           },
         ],
+      }
+    );
+    await bot.createMessage(privateChannel.id, {
+      embed: {
+        title: `Bem-vindo(a) ao nosso servidor, ${member.username}!`,
+        description: `Olá ${member.mention}, este é seu canal privado temporário para verificação. Por favor, use o comando \`!verificar\` para completar sua verificação.`,
+        color: 0xffff00,
+        footer: {
+          text: "Obrigado por se juntar!",
+        },
       },
-    ],
-  });
-});
-
-bot.on("interactionCreate", (interaction) => {
-  if (interaction instanceof Eris.ComponentInteraction) {
-    guild = interaction.member.guild.id;
-    member = interaction.member.id;
-    console.log(guild, member);
-    adicionarCargoAoUsuario(guild, member);
-    return interaction.createMessage({
-      content: "Seu cargo foi adicionado com sucesso!",
-      flags: 64,
     });
+  } catch (error) {
+    console.error("Erro ao criar canal privado:", error);
   }
 });
+
+bot.on("messageCreate", async (msg) => {
+  if (msg.content === "!verificar") {
+    const guild = msg.guildID;
+    const member = msg.author.id;
+    try {
+      await adicionarCargoAoUsuario(guild, member);
+      await bot.createMessage(msg.channel.id, {
+        content: "Você foi verificado com sucesso e seu cargo foi adicionado!",
+      });
+      await bot.deleteChannel(msg.channel.id);
+    } catch (error) {
+      console.error("Erro ao verificar usuário:", error);
+      await bot.createMessage(msg.channel.id, {
+        content:
+          "Ocorreu um erro durante a verificação. Por favor, tente novamente mais tarde.",
+      });
+    }
+  }
+});
+
+async function adicionarCargoAoUsuario(guildID, memberID) {
+  try {
+    const guild = bot.guilds.get(guildID);
+    const member = guild.members.get(memberID);
+    const roleID = "1257744447005921291";
+    await member.addRole(roleID);
+    console.log(`Cargo adicionado ao usuário ${member.username}`);
+  } catch (error) {
+    console.error("Erro ao adicionar cargo ao usuário:", error);
+  }
+}
 
 bot.connect();
