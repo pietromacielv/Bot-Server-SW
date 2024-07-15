@@ -10,16 +10,13 @@ const bot = require("./bot");
 const embedController = require("./controllers/embedController");
 const port = process.env.PORT || 4000;
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-  bot.connect();
-  bot.on("ready", async () => {
-    console.log("Ready!");
+app.post("/generate-embed", embedController.generateEmbed);
+
+bot.on("ready", async () => {
+  console.log("Ready!");
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
   });
 });
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
-
-app.post("/generate-embed", embedController.generateEmbed);
+bot.connect();
