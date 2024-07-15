@@ -1,8 +1,10 @@
 {
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "eris": "^0.17.2",
-    "express": "^4.19.2"
+    "@discordjs/builders": "^1.8.2",
+    "@discordjs/rest": "^2.3.0",
+    "color": "^4.2.3",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5"
   },
   "name": "bot-server-sw",
   "version": "1.0.0",

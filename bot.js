@@ -1,64 +1,55 @@
-const Eris = require("eris");
-const Constants = Eris.Constants;
+const { EmbedBuilder } = require("@discordjs/builders");
+const { Client, GatewayIntentBits, Partials, Embed } = require("discord.js");
+const Color = require("color");
+require("dotenv").config();
 
-const bot = new Eris(process.env.BOT_TOKEN, {
-  intents: ["all"],
+const bot = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+  partials: [Partials.Channel],
 });
 
-bot.on("guildMemberAdd", async (guild, member) => {
+const commands = [{ name: "form", description: "Cria um formulário!" }];
+
+bot.on("guildMemberAdd", async (member) => {
   const welcomeEmbed = require("./embeds/welcomeEmbed");
-  bot.createMessage("1257724564407062531", { embed: welcomeEmbed(member) });
+  const channel = bot.channels.cache.get("1257724564407062531");
+  if (channel) {
+    channel.send({ embeds: [welcomeEmbed(member)] });
+  }
+
+  const { ChannelType, PermissionsBitField } = require("discord.js");
 
   try {
-    const privateChannel = await guild.createChannel(
-      `bem-vindo-${member.username}`,
-      0,
-      {
-        permissionOverwrites: [
-          {
-            id: member.id,
-            type: 1,
-            allow: 1024,
-          },
-          {
-            id: bot.user.id,
-            type: 1,
-            allow: 1024,
-          },
-          {
-            id: guild.id,
-            type: 0,
-            deny: 1024,
-          },
-        ],
-      }
-    );
+    const privateChannel = await member.guild.channels.create({
+      name: `bem-vindo-${member.user.username}`,
+      type: ChannelType.GuildText,
+      permissionOverwrites: [
+        {
+          id: member.id,
+          allow: [PermissionsBitField.Flags.ViewChannel],
+        },
+        {
+          id: bot.user.id,
+          allow: [PermissionsBitField.Flags.ViewChannel],
+        },
+        {
+          id: member.guild.id,
+          deny: [PermissionsBitField.Flags.ViewChannel],
+        },
+      ],
+    });
     const privateEmbed = require("./embeds/privateEmbed");
-    await bot.createMessage(privateChannel.id, { embed: privateEmbed(member) });
+    await privateChannel.send({ embeds: [privateEmbed(member)] });
   } catch (error) {
     console.error("Erro ao criar canal privado:", error);
   }
 });
 
-bot.on("messageCreate", async (msg) => {
-  if (msg.content === "!verificar") {
-    const verifyController = require("./controllers/verifyController");
-    verifyController.verifyUser(msg);
-  }
-});
-
-bot.on("messageCreate", async (msg) => {
-    if (msg.content === "Ping!") {
-        const responses = ["Pang!", "Peng!", "Pong!", "Pung!"];
-        
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        
-        bot.createMessage(msg.channel.id, randomResponse);
-    }
-    if (msg.content.toLowerCase().startsWith('hello there')) {
-        bot.createMessage(msg.channel.id, "General Kenobi!");
-    }
-    
-});
+bot.login(process.env.BOT_TOKEN);
 
 module.exports = bot;
