@@ -12,19 +12,14 @@ const port = process.env.PORT || 4000;
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  bot.connect();
   bot.on("ready", async () => {
     console.log("Ready!");
   });
-  
-  bot.connect();
 });
 
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
 
 app.post("/generate-embed", embedController.generateEmbed);
-
-
-
-
